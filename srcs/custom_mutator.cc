@@ -5,18 +5,9 @@
 #include <stack>
 #include <string>
 
-#include "afl-fuzz.h"
-#include "config_validate.h"
-#include "db.h"
 #include "env.h"
 #include "yaml-cpp/yaml.h"
-
-struct SquirrelMutator {
-  SquirrelMutator(DataBase *db) : database(db) {}
-  ~SquirrelMutator() { delete database; }
-  DataBase *database;
-  std::string current_input;
-};
+#include "custom_mutator.h"
 
 extern "C" {
 
@@ -32,6 +23,7 @@ void *afl_custom_init(afl_state_t *afl, unsigned int seed) {
   YAML::Node config = YAML::LoadFile(config_file);
   if (!utils::validate_db_config(config)) {
     std::cerr << "Invalid config!" << std::endl;
+    exit(-1);
   }
   auto *mutator = create_database(config);
   return new SquirrelMutator(mutator);

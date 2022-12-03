@@ -27,6 +27,18 @@ target_link_libraries(
   config_validator
 )
 
+add_executable(
+  custom_mutator_test
+  custom_mutator_test.cc
+)
+
+target_link_libraries(
+  custom_mutator_test
+  GTest::gtest_main
+  yaml-cpp
+  sqlite_mutator
+)
+
 include(GoogleTest)
 gtest_discover_tests(hello_test)
 
