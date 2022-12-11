@@ -1,3 +1,4 @@
+#!/bin/bash
 export AFL_CUSTOM_MUTATOR_ONLY=1
 #export AFL_CUSTOM_MUTATOR_LIBRARY=`pwd`/build/libpostgresql_mutator.so
 export AFL_CUSTOM_MUTATOR_LIBRARY=`pwd`/build/libmysql_mutator.so
