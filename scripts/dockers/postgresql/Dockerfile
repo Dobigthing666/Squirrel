@@ -16,7 +16,7 @@ RUN chmod +w /etc/sudoers && \
     echo "%dobigthing   ALL=(ALL:ALL)NOPASSWD:ALL" >> /etc/sudoers && \
     chmod -w /etc/sudoers
 
-# install mariadb-server
+
 RUN apt-get -y install apt-transport-https curl software-properties-common gnutls-dev
 RUN curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc \
     'https://mariadb.org/mariadb_release_signing_key.asc'
@@ -33,16 +33,12 @@ RUN git clone https://github.com/s3team/Squirrel.git && \
     cmake --build build -j && \
     cd AFLplusplus/ && LLVM_CONFIG=llvm-config-14 make -j20
 
-RUN git clone --depth=1 https://github.com/MariaDB/server.git mariadb && \
-    mkdir bld && cd bld/ && \
-    CC=/home/Squirrel/AFLplusplus/afl-clang-fast CXX=/home/Squirrel/AFLplusplus/afl-clang-fast++ cmake ../mariadb/ && \
-    make -j20 && sudo cmake --install . --prefix /usr/local/mysql/
+RUN git clone https://github.com/postgres/postgres.git postgres/ && \
+    mkdir bld/ && cd bld/ && \
+    CC=/home/Squirrel/AFLplusplus/afl-clang-fast CXX=/home/Squirrel/AFLplusplus/afl-clang-fast++ \
+    ../postgres/configure
 
-RUN sudo chown dobigthing:dobigthing /usr/local/mysql/ -R && \
-    cd /usr/local/mysql/ && \
-    scripts/mysql_install_db --user=dobigthing
+RUN cd bld/ && make -j && sudo make install && \
+    sudo mkdir /usr/local/pgsql/data && sudo chown dobigthing /usr/local/pgsql/data
 
 ENTRYPOINT bash
-#ENTRYPOINT /usr/local/mysql/bin/mysqld --basedir=/usr/local/mysql \
-#            --datadir=/usr/local/mysql/data --log-error=err_log.err \
-#            --pid-file=server_pid.pid --max_statement_time=1

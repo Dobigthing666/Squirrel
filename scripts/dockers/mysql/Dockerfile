@@ -4,7 +4,8 @@ MAINTAINER "dobigthing"
 # common config
 RUN apt-get update
 RUN apt-get -y install make cmake build-essential vim sudo git \
-    clang libmysqlclient-dev ninja-build pkg-config clang-format libpq-dev
+    clang libmysqlclient-dev ninja-build pkg-config clang-format \
+    libpq-dev libyaml-cpp-dev lld
 
 RUN mkdir -p /home && \
     groupadd dobigthing && \
@@ -29,18 +30,21 @@ WORKDIR /home
 
 RUN git clone https://github.com/s3team/Squirrel.git && \
     cd Squirrel && git submodule update --init && \
-    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -Wno-dev -DMySQL=ON && \
     cmake --build build -j && \
     cd AFLplusplus/ && LLVM_CONFIG=llvm-config-14 make -j20
 
-RUN git clone --depth=1 https://github.com/MariaDB/server.git mariadb && \
-    mkdir bld && cd bld/ && \
-    CC=/home/Squirrel/AFLplusplus/afl-clang-fast CXX=/home/Squirrel/AFLplusplus/afl-clang-fast++ cmake ../mariadb/ && \
-    make -j20 && sudo cmake --install . --prefix /usr/local/mysql/
+RUN git clone --depth=1 https://github.com/mysql/mysql-server.git mysql
+RUN mkdir bld && cd bld/ && \
+    CC=/home/Squirrel/AFLplusplus/afl-clang-lto CXX=/home/Squirrel/AFLplusplus/afl-clang-lto++ \
+    cmake ../mysql/ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=../boost -DWITH_ASAN=1 -DWITH_ASAN_SCOPE=1 \
+    -DWITH_DEBUG=1 -DCPACK_MONOLITHIC_INSTALL=1 -DWITH_UNIT_TESTS=OFF
+    
+RUN cd bld/ && make -j && sudo cmake --install . --prefix /usr/local/mysql/
 
 RUN sudo chown dobigthing:dobigthing /usr/local/mysql/ -R && \
-    cd /usr/local/mysql/ && \
-    scripts/mysql_install_db --user=dobigthing
+    cd /usr/local/mysql/ && mkdir mysql-files && chmod 750 mysql-files && \
+    bin/mysqld --initialize-insecure --user=dobigthing && bin/mysql_ssl_rsa_setup
 
 ENTRYPOINT bash
 #ENTRYPOINT /usr/local/mysql/bin/mysqld --basedir=/usr/local/mysql \
