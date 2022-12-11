@@ -7,3 +7,4 @@ user_name: yongheng
 host: localhost
 sock_path: /tmp/mysql.sock
 db_prefix: test
+startup_cmd: 'echo hello'
