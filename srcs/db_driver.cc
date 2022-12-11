@@ -193,13 +193,13 @@ int main(int argc, char *argv[]) {
   /* then we initialize the shared memory map and start the forkserver */
   __afl_map_shm();
   __afl_start_forkserver();
-  
+
   // Start the database server. In case that the driver
   // is stopped and restarted, we should not start another server.
-  if(!database->check_alive()){
-    system(startup_cmd.c_str()); 
+  if (!database->check_alive()) {
+    system(startup_cmd.c_str());
   }
-  
+
   while ((len = __afl_next_testcase(buf, kMaxInputSize)) > 0) {
     std::string query((const char *)buf, len);
     // std::cerr << "Executing: " << query << std::endl;
@@ -214,9 +214,9 @@ int main(int argc, char *argv[]) {
     /* report the test case is done and wait for the next */
     __afl_end_testcase(status);
 
-    if(status == client::kServerCrash){
-        // Restart the server.
-        system(startup_cmd.c_str());
+    if (status == client::kServerCrash) {
+      // Restart the server.
+      system(startup_cmd.c_str());
     }
   }
   assert(false && "Crash on parent?");

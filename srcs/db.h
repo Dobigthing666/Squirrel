@@ -6,8 +6,6 @@ class DataBase {
  public:
   // Set up the database.
   virtual bool initialize(YAML::Node config) = 0;
-  // Check whether the database server is alive.
-  virtual bool check_alive() = 0;
   // Mutate the query and return the number of new queries.
   virtual size_t mutate(const std::string &) = 0;
   // Return an new query to test. The `buffer` should be unmanaged,
