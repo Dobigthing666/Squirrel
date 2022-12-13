@@ -28,22 +28,22 @@ RUN git clone https://github.com/s3team/Squirrel.git && \
     cmake --build build -j && \
     cd AFLplusplus/ && LLVM_CONFIG=llvm-config-14 make -j20
 
-ARG CFLAGS=-DSQLITE_MAX_LENGTH=128000000 -DSQLITE_MAX_SQL_LENGTH=128000000 -DSQLITE_MAX_MEMORY=25000000 -DSQLITE_PRINTF_PRECISION_LIMIT=1048576 -DSQLITE_DEBUG=1 -DSQLITE_MAX_PAGE_COUNT=16384
+ARG CFLAGS="-DSQLITE_MAX_LENGTH=128000000 -DSQLITE_MAX_SQL_LENGTH=128000000 -DSQLITE_MAX_MEMORY=25000000 -DSQLITE_PRINTF_PRECISION_LIMIT=1048576 -DSQLITE_DEBUG=1 -DSQLITE_MAX_PAGE_COUNT=16384"
 
-RUN git clone https://github.com/sqlite/sqlite sqlite3/ && \
-    mkdir bld/ && cd bld/ && \
-    CC=/home/Squirrel/AFLplusplus/afl-clang-lto CXX=/home/Squirrel/AFLplusplus/afl-clang-lto++ \
-    ../sqlite3/configure && make -j && make sqlite3.c
+RUN git clone https://github.com/sqlite/sqlite sqlite3/ && cd sqlite3 && mkdir bld
 
-RUN $CC $CFLAGS -I. -c \
+WORKDIR /home/sqlite3/bld
+
+RUN CC=/home/Squirrel/AFLplusplus/afl-clang-lto CXX=/home/Squirrel/AFLplusplus/afl-clang-lto++ \
+    ../configure && make -j && make sqlite3.c
+
+RUN /home/Squirrel/AFLplusplus/afl-clang-lto $CFLAGS -I. -c \
     /home/sqlite3/test/ossfuzz.c -o /home/sqlite3/test/ossfuzz.o
-RUN $CC $CFLAGS -I. -c \
+RUN /home/Squirrel/AFLplusplus/afl-clang-lto $CFLAGS -I. -c \
     /home/sqlite3/test/ossshell.c -o /home/sqlite3/test/ossshell.o
 
-RUN $CXX $CXXFLAGS \
-    /home/sqlite3/test/ossfuzz.o /home/sqlite3/test/ossshell.o -o home/ossfuzz \
+RUN /home/Squirrel/AFLplusplus/afl-clang-lto++ $CXXFLAGS \
+    /home/sqlite3/test/ossfuzz.o /home/sqlite3/test/ossshell.o -o /home/ossfuzz \
    ./sqlite3.o -ldl -pthread
-
-RUN sudo make install
 
 ENTRYPOINT bash
