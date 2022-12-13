@@ -19,26 +19,31 @@ RUN chmod +w /etc/sudoers && \
     echo "%dobigthing   ALL=(ALL:ALL)NOPASSWD:ALL" >> /etc/sudoers && \
     chmod -w /etc/sudoers
 
-
-RUN apt-get -y install apt-transport-https curl software-properties-common gnutls-dev
-RUN curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc \
-    'https://mariadb.org/mariadb_release_signing_key.asc'
-RUN echo "deb https://ftp.osuosl.org/pub/mariadb/repo/10.10/ubuntu jammy main" >> /etc/apt/sources.list
-RUN echo "deb-src https://ftp.osuosl.org/pub/mariadb/repo/10.10/ubuntu jammy main" >> /etc/apt/sources.list
-RUN apt-get update && apt-get -y build-dep mariadb
-
 USER dobigthing
 WORKDIR /home
 
 RUN git clone https://github.com/s3team/Squirrel.git && \
     cd Squirrel && git submodule update --init && \
-    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSQLITE=ON && \
     cmake --build build -j && \
     cd AFLplusplus/ && LLVM_CONFIG=llvm-config-14 make -j20
 
-RUN git clone https://github.com/sqlite/sqlite sqlite/ && \
+ARG CFLAGS=-DSQLITE_MAX_LENGTH=128000000 -DSQLITE_MAX_SQL_LENGTH=128000000 -DSQLITE_MAX_MEMORY=25000000 -DSQLITE_PRINTF_PRECISION_LIMIT=1048576 -DSQLITE_DEBUG=1 -DSQLITE_MAX_PAGE_COUNT=16384
+
+RUN git clone https://github.com/sqlite/sqlite sqlite3/ && \
     mkdir bld/ && cd bld/ && \
     CC=/home/Squirrel/AFLplusplus/afl-clang-lto CXX=/home/Squirrel/AFLplusplus/afl-clang-lto++ \
-    ../sqlite/configure && make -j && make sqlite3.c && sudo make install
+    ../sqlite3/configure && make -j && make sqlite3.c
+
+RUN $CC $CFLAGS -I. -c \
+    /home/sqlite3/test/ossfuzz.c -o /home/sqlite3/test/ossfuzz.o
+RUN $CC $CFLAGS -I. -c \
+    /home/sqlite3/test/ossshell.c -o /home/sqlite3/test/ossshell.o
+
+RUN $CXX $CXXFLAGS \
+    /home/sqlite3/test/ossfuzz.o /home/sqlite3/test/ossshell.o -o home/ossfuzz \
+   ./sqlite3.o -ldl -pthread
+
+RUN sudo make install
 
 ENTRYPOINT bash
