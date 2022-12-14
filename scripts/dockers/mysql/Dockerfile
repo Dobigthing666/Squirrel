@@ -1,11 +1,11 @@
 from ubuntu:22.04
-MAINTAINER "dobigthing"
+LABEL maintainer="Squirrel"
 
 # common config
 RUN apt-get update
 RUN apt-get -y install make cmake build-essential vim sudo git \
     clang libmysqlclient-dev ninja-build pkg-config clang-format \
-    libpq-dev libyaml-cpp-dev lld
+    libpq-dev libyaml-cpp-dev lld llvm bison
 
 RUN mkdir -p /home && \
     groupadd dobigthing && \
@@ -17,26 +17,19 @@ RUN chmod +w /etc/sudoers && \
     echo "%dobigthing   ALL=(ALL:ALL)NOPASSWD:ALL" >> /etc/sudoers && \
     chmod -w /etc/sudoers
 
-# install mariadb-server
-RUN apt-get -y install apt-transport-https curl software-properties-common gnutls-dev
-RUN curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc \
-    'https://mariadb.org/mariadb_release_signing_key.asc'
-RUN echo "deb https://ftp.osuosl.org/pub/mariadb/repo/10.10/ubuntu jammy main" >> /etc/apt/sources.list
-RUN echo "deb-src https://ftp.osuosl.org/pub/mariadb/repo/10.10/ubuntu jammy main" >> /etc/apt/sources.list
-RUN apt-get update && apt-get -y build-dep mariadb
-
 USER dobigthing
 WORKDIR /home
 
 RUN git clone https://github.com/s3team/Squirrel.git && \
     cd Squirrel && git submodule update --init && \
-    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -Wno-dev -DMySQL=ON && \
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -Wno-dev -DMYSQL=ON && \
     cmake --build build -j && \
     cd AFLplusplus/ && LLVM_CONFIG=llvm-config-14 make -j20
 
 RUN git clone --depth=1 https://github.com/mysql/mysql-server.git mysql
+RUN sudo apt-get -y install apt-transport-https curl software-properties-common gnutls-dev
 RUN mkdir bld && cd bld/ && \
-    CC=/home/Squirrel/AFLplusplus/afl-clang-lto CXX=/home/Squirrel/AFLplusplus/afl-clang-lto++ \
+    CC=/home/Squirrel/AFLplusplus/afl-cc CXX=/home/Squirrel/AFLplusplus/afl-c++ \
     cmake ../mysql/ -DDOWNLOAD_BOOST=1 -DWITH_BOOST=../boost -DWITH_ASAN=1 -DWITH_ASAN_SCOPE=1 \
     -DWITH_DEBUG=1 -DCPACK_MONOLITHIC_INSTALL=1 -DWITH_UNIT_TESTS=OFF
     

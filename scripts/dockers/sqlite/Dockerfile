@@ -1,13 +1,13 @@
 from ubuntu:22.04
-MAINTAINER "dobigthing"
+LABEL maintainer="Squirrel"
 
 ENV DEBIAN_FRONTEND noninteractive
 
 # common config
 RUN apt-get update
-RUN apt-get -y install make cmake build-essential vim sudo git -y tcl8.6 tcl8.6-tdbc-sqlite3\
-    clang libmysqlclient-dev ninja-build pkg-config clang-format \
-    libpq-dev libyaml-cpp-dev lld
+RUN apt-get -y install make cmake build-essential vim sudo git tcl8.6 tcl8.6-tdbc-sqlite3\
+    clang ninja-build pkg-config clang-format \
+    libpq-dev libyaml-cpp-dev lld llvm
 
 RUN mkdir -p /home && \
     groupadd dobigthing && \
@@ -34,15 +34,16 @@ RUN git clone https://github.com/sqlite/sqlite sqlite3/ && cd sqlite3 && mkdir b
 
 WORKDIR /home/sqlite3/bld
 
-RUN CC=/home/Squirrel/AFLplusplus/afl-clang-lto CXX=/home/Squirrel/AFLplusplus/afl-clang-lto++ \
-    ../configure && make -j && make sqlite3.c
+ENV CC=/home/Squirrel/AFLplusplus/afl-cc
+ENV CXX=/home/Squirrel/AFLplusplus/afl-c++
+RUN ../configure && make -j && make sqlite3.c
 
-RUN /home/Squirrel/AFLplusplus/afl-clang-lto $CFLAGS -I. -c \
+RUN $CC $CFLAGS -I. -c \
     /home/sqlite3/test/ossfuzz.c -o /home/sqlite3/test/ossfuzz.o
-RUN /home/Squirrel/AFLplusplus/afl-clang-lto $CFLAGS -I. -c \
+RUN $CC $CFLAGS -I. -c \
     /home/sqlite3/test/ossshell.c -o /home/sqlite3/test/ossshell.o
 
-RUN /home/Squirrel/AFLplusplus/afl-clang-lto++ $CXXFLAGS \
+RUN $CXX $CXXFLAGS \
     /home/sqlite3/test/ossfuzz.o /home/sqlite3/test/ossshell.o -o /home/ossfuzz \
    ./sqlite3.o -ldl -pthread
 
