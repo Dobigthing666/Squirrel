@@ -29,7 +29,7 @@ USER dobigthing
 WORKDIR /home
 
 RUN git clone https://github.com/Dobigthing666/Squirrel.git && \
-    cd Squirrel && git checkout better-runner-script && git submodule update --init && \
+    cd Squirrel && git submodule update --init && \
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build -j && \
     cd AFLplusplus/ && LLVM_CONFIG=llvm-config-14 make -j20
