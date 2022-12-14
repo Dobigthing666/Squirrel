@@ -30,9 +30,6 @@ def run(database, input_dir, output_dir=None, config_file=None, fuzzer=None):
     if database == "mariadb":
         database = "mysql"
 
-    if os.environ["OUT"]:
-        output_dir = os.environ["OUT"]
-
     if not output_dir:
         output_dir = "/tmp/fuzz"
 
@@ -59,5 +56,4 @@ def run(database, input_dir, output_dir=None, config_file=None, fuzzer=None):
 
 
 if __name__ == "__main__":
-    print(ROOTPATH)
     fire.Fire(run)
